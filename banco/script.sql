@@ -31,6 +31,9 @@ CREATE TABLE IF NOT EXISTS sensores (
     localizacao VARCHAR(80) NOT NULL,
     segmento VARCHAR(80) NOT NULL,
     ultima_leitura ENUM('normal', 'atencao', 'critico') NOT NULL DEFAULT 'normal',
+    INDEX idx_sensores_tipo (tipo),
+    INDEX idx_sensores_trem_tipo (id_trem, tipo),
+    CONSTRAINT chk_sensores_codigo CHECK (codigo REGEXP '^S-(TEMP|VELO|ENER|LOCA)-[0-9]{3}$'),
     CONSTRAINT fk_sensores_trens FOREIGN KEY (id_trem) REFERENCES trens (id_trem) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
