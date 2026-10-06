@@ -35,5 +35,15 @@ CREATE TABLE IF NOT EXISTS sensores (
     localizacao VARCHAR(80) NOT NULL,
     segmento VARCHAR(80) NOT NULL,
     ultima_leitura ENUM('normal', 'atencao', 'critico') NOT NULL DEFAULT 'normal',
+    INDEX idx_sensores_tipo (tipo),
+    INDEX idx_sensores_trem_tipo (id_trem, tipo),
+    CONSTRAINT chk_sensores_codigo CHECK (codigo REGEXP '^S-(TEMP|VELO|ENER|LOCA)-[0-9]{3}$'),
     CONSTRAINT fk_sensores_trens FOREIGN KEY (id_trem) REFERENCES trens (id_trem) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SET @indice_tipo = IF(EXISTS (SELECT 1 FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'sensores' AND index_name = 'idx_sensores_tipo'), 'SELECT 1', 'ALTER TABLE sensores ADD INDEX idx_sensores_tipo (tipo)');
+PREPARE etapa FROM @indice_tipo; EXECUTE etapa; DEALLOCATE PREPARE etapa;
+SET @indice_trem_tipo = IF(EXISTS (SELECT 1 FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'sensores' AND index_name = 'idx_sensores_trem_tipo'), 'SELECT 1', 'ALTER TABLE sensores ADD INDEX idx_sensores_trem_tipo (id_trem, tipo)');
+PREPARE etapa FROM @indice_trem_tipo; EXECUTE etapa; DEALLOCATE PREPARE etapa;
+SET @check_codigo = IF(EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE table_schema = DATABASE() AND table_name = 'sensores' AND constraint_name = 'chk_sensores_codigo'), 'SELECT 1', 'ALTER TABLE sensores ADD CONSTRAINT chk_sensores_codigo CHECK (codigo REGEXP ''^S-(TEMP|VELO|ENER|LOCA)-[0-9]{3}$'')');
+PREPARE etapa FROM @check_codigo; EXECUTE etapa; DEALLOCATE PREPARE etapa;
