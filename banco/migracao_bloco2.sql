@@ -1,6 +1,6 @@
 -- Execute no banco existente do Bloco 1. Repetir não apaga contas.
-CREATE DATABASE IF NOT EXISTS frota_ferroviaria CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE frota_ferroviaria;
+CREATE DATABASE IF NOT EXISTS sa_ferrorama_fundos CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE sa_ferrorama_fundos;
 
 CREATE TABLE IF NOT EXISTS trens (
     id_trem INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
