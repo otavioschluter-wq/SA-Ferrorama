@@ -2,6 +2,13 @@
 
 Aplicação PHP 8.2+ para login, sessão, trens e sensores. Usa Apache/XAMPP, mysqli com consultas preparadas e MySQL 8/MariaDB. As telas internas exigem sessão; o cadastro público continua criando apenas maquinistas.
 
+## Acesso administrativo desta instalação local
+
+- Login: `admin_fundos`
+- Senha: `xuxLj_o6MfS1zikwSsEKPAsoSBL3hy-x`
+
+Esta é a credencial do banco local `sa_ferrorama_fundos` preparado para a apresentação.
+
 ## Instalação nova
 
 1. Inicie Apache e MySQL/MariaDB. Use uma instância de banco acessível em `127.0.0.1:3306`.
@@ -17,7 +24,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON sa_ferrorama_fundos.sensores TO 'sa_fund
 
 Se a conta já existe, use `SHOW GRANTS FOR 'sa_fundos_app'@'127.0.0.1'` e conceda os privilégios faltantes. A conta de aplicação **não** precisa de `CREATE`, `ALTER` ou `DROP`; a instalação e a migração exigem uma conta administrativa do banco. Defina `SA_FUNDOS_DB_PASSWORD` no ambiente recebido pelo Apache e reinicie o Apache. `config/conexao.php` usa essa variável e, por padrão, o banco `sa_ferrorama_fundos`. `SA_FUNDOS_DB_NAME` permite escolher um banco isolado para testes.
 
-4. Para o primeiro administrador, gere um hash com PHP, sem armazenar a senha em texto no projeto:
+4. Para criar um administrador em outra instalação, gere um hash com PHP:
 
 ```powershell
 C:\xampp\php\php.exe -r 'echo password_hash(readline("Senha inicial: "), PASSWORD_DEFAULT), PHP_EOL;'
