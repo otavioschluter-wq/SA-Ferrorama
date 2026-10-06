@@ -7,13 +7,19 @@ if (isset($_SESSION['id'], $_SESSION['login'], $_SESSION['papel'])) {
 }
 
 $login = '';
+$nome = '';
 $erros = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nome = is_string($_POST['nome'] ?? null) ? trim($_POST['nome']) : '';
     $login = is_string($_POST['login'] ?? null) ? trim($_POST['login']) : '';
     $senha = is_string($_POST['senha'] ?? null) ? $_POST['senha'] : '';
     $confirmacao = is_string($_POST['confirmacao'] ?? null) ? $_POST['confirmacao'] : '';
     $papel = 'maquinista';
+
+    if ($nome === '' || mb_strlen($nome) > 120) {
+        $erros[] = 'Informe um nome de até 120 caracteres.';
+    }
 
     if ($login === '' || mb_strlen($login) > 80) {
         $erros[] = 'Informe um login de até 80 caracteres.';
@@ -28,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$erros) {
         require __DIR__ . '/../config/conexao.php';
         try {
-            $consulta = $conexao->prepare('SELECT id FROM usuario WHERE login = ? LIMIT 1');
+            $consulta = $conexao->prepare('SELECT id FROM usuarios WHERE login = ? LIMIT 1');
             $consulta->bind_param('s', $login);
             $consulta->execute();
             $existe = $consulta->get_result()->fetch_assoc();
@@ -38,8 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $erros[] = 'Este login já está cadastrado.';
             } else {
                 $hash = password_hash($senha, PASSWORD_DEFAULT);
-                $insercao = $conexao->prepare('INSERT INTO usuario (login, senha, papel) VALUES (?, ?, ?)');
-                $insercao->bind_param('sss', $login, $hash, $papel);
+                $insercao = $conexao->prepare('INSERT INTO usuarios (nome, login, senha, papel) VALUES (?, ?, ?, ?)');
+                $insercao->bind_param('ssss', $nome, $login, $hash, $papel);
                 $insercao->execute();
                 $insercao->close();
 
@@ -98,6 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <form class="cadastro-formulario" method="post">
+                <div class="cadastro-campo"><label for="nome">Nome</label><input id="nome" name="nome" maxlength="120" value="<?= htmlspecialchars($nome, ENT_QUOTES, 'UTF-8') ?>" required></div>
                 <div class="cadastro-campo">
                     <label for="login">Login</label>
                     <input id="login" name="login" type="text" maxlength="80" value="<?= htmlspecialchars($login, ENT_QUOTES, 'UTF-8') ?>" autocomplete="username" required autofocus>

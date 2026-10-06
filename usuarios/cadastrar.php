@@ -1,16 +1,28 @@
 <?php
 require __DIR__ . '/../includes/permissao.php';
+exigirPapel(['administrador']);
+require __DIR__ . '/../includes/seguranca.php';
+require __DIR__ . '/../config/conexao.php';
 
+$nome = '';
 $login = '';
 $papel = '';
+$tremAtribuido = '';
 $erros = [];
 $sucesso = '';
+$trens = $conexao->query('SELECT id_trem, prefixo, modelo FROM trens ORDER BY prefixo')->fetch_all(MYSQLI_ASSOC);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    require __DIR__ . '/../includes/permissao.php';
+    exigirCsrf();
+    $nome = is_string($_POST['nome'] ?? null) ? trim($_POST['nome']) : '';
     $login = is_string($_POST['login'] ?? null) ? trim($_POST['login']) : '';
     $papel = is_string($_POST['papel'] ?? null) ? $_POST['papel'] : '';
     $senha = is_string($_POST['senha'] ?? null) ? $_POST['senha'] : '';
     $confirmacao = is_string($_POST['confirmacao'] ?? null) ? $_POST['confirmacao'] : '';
+    $tremAtribuido = is_string($_POST['trem_atribuido_id'] ?? null) ? $_POST['trem_atribuido_id'] : '';
+
+    if ($nome === '' || mb_strlen($nome) > 120) {
+        $erros[] = 'Informe um nome de até 120 caracteres.';
+    }
 
     if ($login === '' || mb_strlen($login) > 80) {
         $erros[] = 'Informe um login de até 80 caracteres.';
@@ -24,11 +36,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($senha !== $confirmacao) {
         $erros[] = 'A confirmação da senha não confere.';
     }
+    if ($tremAtribuido !== '' && ($papel !== 'maquinista' || filter_var($tremAtribuido, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) === false || !in_array((int) $tremAtribuido, array_map('intval', array_column($trens, 'id_trem')), true))) {
+        $erros[] = 'Selecione um trem válido apenas para maquinistas.';
+    }
 
     if (!$erros) {
-        require __DIR__ . '/../config/conexao.php';
         try {
-            $consulta = $conexao->prepare('SELECT id FROM usuario WHERE login = ? LIMIT 1');
+            $consulta = $conexao->prepare('SELECT id FROM usuarios WHERE login = ? LIMIT 1');
             $consulta->bind_param('s', $login);
             $consulta->execute();
             $existe = $consulta->get_result()->fetch_assoc();
@@ -37,13 +51,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $erros[] = 'Este login já está cadastrado.';
             } else {
                 $hash = password_hash($senha, PASSWORD_DEFAULT);
-                $insercao = $conexao->prepare('INSERT INTO usuario (login, senha, papel) VALUES (?, ?, ?)');
-                $insercao->bind_param('sss', $login, $hash, $papel);
+                $idTrem = $tremAtribuido === '' ? null : (int) $tremAtribuido;
+                $insercao = $conexao->prepare('INSERT INTO usuarios (nome, login, senha, papel, trem_atribuido_id) VALUES (?, ?, ?, ?, ?)');
+                $insercao->bind_param('ssssi', $nome, $login, $hash, $papel, $idTrem);
                 $insercao->execute();
                 $insercao->close();
                 $sucesso = 'Usuário cadastrado com sucesso.';
                 $login = '';
+                $nome = '';
                 $papel = '';
+                $tremAtribuido = '';
             }
         } catch (mysqli_sql_exception $falha) {
             $erros[] = $falha->getCode() === 1062 ? 'Este login já está cadastrado.' : 'Não foi possível cadastrar o usuário.';
@@ -60,10 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="../assets/css/estilo.css">
 </head>
 <body class="pagina-cadastro">
-    <header class="topo cadastro-topo">
-        <a class="marca cadastro-marca" href="../principal.php">A-TRAIN</a>
-        <a class="cadastro-voltar" href="../principal.php">← Voltar à página principal</a>
-    </header>
+    <?php require __DIR__ . '/../includes/cabecalho.php'; ?>
     <main class="cadastro-layout">
         <section class="cadastro-intro" aria-labelledby="cadastro-titulo">
             <span class="cadastro-etiqueta">Administração de acesso</span>
@@ -97,6 +111,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <form class="cadastro-formulario" method="post">
+                <input type="hidden" name="csrf" value="<?= escapar(tokenCsrf()) ?>">
+                <div class="cadastro-campo"><label for="nome">Nome</label><input id="nome" name="nome" maxlength="120" value="<?= escapar($nome) ?>" required></div>
                 <div class="cadastro-campo">
                     <label for="login">Login</label>
                     <input id="login" name="login" type="text" maxlength="80" value="<?= htmlspecialchars($login, ENT_QUOTES, 'UTF-8') ?>" autocomplete="username" required autofocus>
@@ -115,6 +131,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <div class="cadastro-divisor" aria-hidden="true"></div>
+
+                <div class="cadastro-campo"><label for="trem_atribuido_id">Trem atribuído ao maquinista (opcional)</label><select id="trem_atribuido_id" name="trem_atribuido_id"><option value="">Sem trem atribuído</option><?php foreach ($trens as $trem): ?><option value="<?= (int) $trem['id_trem'] ?>" <?= (string) $trem['id_trem'] === $tremAtribuido ? 'selected' : '' ?>><?= escapar($trem['prefixo'] . ' — ' . $trem['modelo']) ?></option><?php endforeach; ?></select><small>Para atribuir ou alterar após o cadastro, use SQL administrativo conforme o README.</small></div>
 
                 <div class="cadastro-senhas">
                     <div class="cadastro-campo">
