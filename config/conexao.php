@@ -1,8 +1,8 @@
 <?php
 $servidor = '127.0.0.1';
-$usuario = 'atrain_app';
-$senha_banco = getenv('ATRAIN_DB_PASSWORD');
-$banco = getenv('ATRAIN_DB_NAME') ?: 'frota_ferroviaria';
+$usuario = 'sa_fundos_app';
+$senha_banco = getenv('SA_FUNDOS_DB_PASSWORD');
+$banco = getenv('SA_FUNDOS_DB_NAME') ?: 'sa_ferrorama_fundos';
 
 try {
     if (!is_string($senha_banco) || $senha_banco === '') {
