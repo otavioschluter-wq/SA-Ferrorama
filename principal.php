@@ -10,11 +10,10 @@ require __DIR__ . '/includes/proteger.php';
     <link rel="stylesheet" href="assets/css/estilo.css">
 </head>
 <body>
-    <header class="topo"><span class="marca">A-TRAIN</span><a href="logout.php">Sair</a></header>
+    <?php require __DIR__ . '/includes/cabecalho.php'; ?>
     <main class="cartao conteudo">
-        <h1>Boas-vindas, <?= htmlspecialchars($_SESSION['login'], ENT_QUOTES, 'UTF-8') ?></h1>
-        <p class="descricao">Papel: <?= htmlspecialchars($_SESSION['papel'], ENT_QUOTES, 'UTF-8') ?></p>
-        <?php if ($_SESSION['papel'] === 'administrador'): ?><a class="botao-link" href="usuarios/cadastrar.php">Cadastrar usuário</a><?php endif; ?>
+        <h1>Boas-vindas, <?= escapar($_SESSION['nome'] ?? $_SESSION['login']) ?></h1>
+        <p class="descricao">Selecione uma opção no menu para continuar.</p>
     </main>
 </body>
 </html>
