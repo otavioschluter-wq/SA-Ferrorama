@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($login !== '' && $senha !== '' && mb_strlen($login) <= 80) {
         require __DIR__ . '/config/conexao.php';
         try {
-            $consulta = $conexao->prepare('SELECT id, login, senha, papel FROM usuario WHERE login = ? LIMIT 1');
+            $consulta = $conexao->prepare('SELECT id, nome, login, senha, papel FROM usuarios WHERE login = ? LIMIT 1');
             $consulta->bind_param('s', $login);
             $consulta->execute();
             $registro = $consulta->get_result()->fetch_assoc();
@@ -28,6 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 session_regenerate_id(true);
                 $_SESSION['id'] = (int) $registro['id'];
                 $_SESSION['login'] = $registro['login'];
+                $_SESSION['nome'] = $registro['nome'];
                 $_SESSION['papel'] = $registro['papel'];
                 header('Location: principal.php');
                 exit;
