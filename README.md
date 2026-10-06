@@ -5,17 +5,17 @@ Aplicação PHP 8.2+ para login, sessão, trens e sensores. Usa Apache/XAMPP, my
 ## Instalação nova
 
 1. Inicie Apache e MySQL/MariaDB. Use uma instância de banco acessível em `127.0.0.1:3306`.
-2. Com uma conta **administrativa do banco**, importe `banco/script.sql` pelo phpMyAdmin ou cliente MySQL. Ele cria `frota_ferroviaria`, `trens`, `usuarios`, `sensores` e três trens plausíveis. A importação pode ser repetida: não substitui trens já cadastrados.
+2. Com uma conta **administrativa do banco**, importe `banco/script.sql` pelo phpMyAdmin ou cliente MySQL. Ele cria o banco exclusivo `sa_ferrorama_fundos`, `trens`, `usuarios`, `sensores` e três trens plausíveis. A importação pode ser repetida: não substitui trens já cadastrados.
 3. Crie a conta de aplicação e conceda somente os privilégios de execução. Substitua `SENHA_LOCAL` por senha própria, fora do repositório:
 
 ```sql
-CREATE USER 'atrain_app'@'127.0.0.1' IDENTIFIED BY 'SENHA_LOCAL';
-GRANT SELECT, INSERT, UPDATE ON frota_ferroviaria.usuarios TO 'atrain_app'@'127.0.0.1';
-GRANT SELECT, INSERT, UPDATE, DELETE ON frota_ferroviaria.trens TO 'atrain_app'@'127.0.0.1';
-GRANT SELECT, INSERT, UPDATE, DELETE ON frota_ferroviaria.sensores TO 'atrain_app'@'127.0.0.1';
+CREATE USER 'sa_fundos_app'@'127.0.0.1' IDENTIFIED BY 'SENHA_LOCAL';
+GRANT SELECT, INSERT, UPDATE ON sa_ferrorama_fundos.usuarios TO 'sa_fundos_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON sa_ferrorama_fundos.trens TO 'sa_fundos_app'@'127.0.0.1';
+GRANT SELECT, INSERT, UPDATE, DELETE ON sa_ferrorama_fundos.sensores TO 'sa_fundos_app'@'127.0.0.1';
 ```
 
-Se a conta já existe, use `SHOW GRANTS FOR 'atrain_app'@'127.0.0.1'` e conceda os privilégios faltantes. A conta de aplicação **não** precisa de `CREATE`, `ALTER` ou `DROP`; a instalação e a migração exigem uma conta administrativa do banco. Defina `ATRAIN_DB_PASSWORD` no ambiente recebido pelo Apache e reinicie o Apache. `config/conexao.php` usa essa variável e, por padrão, o banco `frota_ferroviaria`.
+Se a conta já existe, use `SHOW GRANTS FOR 'sa_fundos_app'@'127.0.0.1'` e conceda os privilégios faltantes. A conta de aplicação **não** precisa de `CREATE`, `ALTER` ou `DROP`; a instalação e a migração exigem uma conta administrativa do banco. Defina `SA_FUNDOS_DB_PASSWORD` no ambiente recebido pelo Apache e reinicie o Apache. `config/conexao.php` usa essa variável e, por padrão, o banco `sa_ferrorama_fundos`. `SA_FUNDOS_DB_NAME` permite escolher um banco isolado para testes.
 
 4. Para o primeiro administrador, gere um hash com PHP, sem armazenar a senha em texto no projeto:
 
@@ -24,7 +24,7 @@ C:\xampp\php\php.exe -r 'echo password_hash(readline("Senha inicial: "), PASSWOR
 ```
 
 ```sql
-INSERT INTO frota_ferroviaria.usuarios (nome, login, senha, papel)
+INSERT INTO sa_ferrorama_fundos.usuarios (nome, login, senha, papel)
 VALUES ('Administrador', 'admin', 'HASH_GERADO', 'administrador');
 ```
 
@@ -32,7 +32,7 @@ Substitua `HASH_GERADO`. Não repita a inserção se o login já existe.
 
 ## Migração do Bloco 1 sem perda de contas
 
-Faça um backup do banco. Com uma conta administrativa, execute **`banco/migracao_bloco2.sql`** no banco que contém a tabela `usuario` original. O script renomeia `usuario` para `usuarios`, mantém `id`, `login`, `senha` (hash) e `papel`, preenche `nome` com o login nas contas antigas e adiciona a atribuição opcional de trem. Cria `trens` e `sensores` sem apagar registros. Pode ser repetido. Não execute `banco/script.sql` no lugar da migração sobre a instalação antiga.
+Faça um backup do banco exclusivo desta SA. Com uma conta administrativa, execute **`banco/migracao_bloco2.sql`** nele caso contenha a tabela `usuario` original. O script renomeia `usuario` para `usuarios`, mantém `id`, `login`, `senha` (hash) e `papel`, preenche `nome` com o login nas contas antigas e adiciona a atribuição opcional de trem. Cria `trens` e `sensores` sem apagar registros. Pode ser repetido. Não execute `banco/script.sql` no lugar da migração sobre a instalação antiga.
 
 Depois da migração, confira os `GRANT`s acima. Privilégios antigos concedidos à tabela singular `usuario` não substituem os privilégios necessários em `usuarios`. Trens iniciais são criados apenas na instalação nova; no banco migrado, cadastre trens pela interface.
 
@@ -58,4 +58,4 @@ O projeto não cria conta de usuário comum nesta etapa. Se esse papel aparecer 
 
 `index.php` faz login; `principal.php` é a entrada interna; `trens.php` e `sensores.php` listam e filtram; `trens_form.php` e `sensores_form.php` criam e editam; `sair.php` encerra a sessão. `includes/proteger.php`, `permissao.php`, `seguranca.php` e `cabecalho.php` centralizam acesso, CSRF e navegação. `logout.php` é apenas um redirecionamento legado e não encerra a sessão. `usuarios/cadastrar.php` permanece exclusivo do administrador; `usuarios/registrar.php` é público.
 
-Teste manualmente com administrador, gestor e maquinista: acesso anônimo e URL direta; login entre várias páginas; saída, Voltar e recarregamento; busca e filtro de trens; CRUD de trens e sensores; prefixo/código duplicados; trem inexistente; exclusão de trem vinculado; consulta restrita do maquinista. A lista é tabela no desktop e cartões no celular. `tests/bloco2_http.py` automatiza o fluxo HTTP contra **um banco isolado de teste** com contas de teste preparadas; recebe a senha pela variável `ATRAIN_TEST_PASSWORD` e a URL por `ATRAIN_TEST_URL`. Para direcionar uma instância PHP de teste a outro banco, configure `ATRAIN_DB_NAME` no ambiente do processo; sem ela, a aplicação usa `frota_ferroviaria`.
+Teste manualmente com administrador, gestor e maquinista: acesso anônimo e URL direta; login entre várias páginas; saída, Voltar e recarregamento; busca e filtro de trens; CRUD de trens e sensores; prefixo/código duplicados; trem inexistente; exclusão de trem vinculado; consulta restrita do maquinista. A lista é tabela no desktop e cartões no celular. `tests/bloco2_http.py` automatiza o fluxo HTTP contra **um banco isolado de teste** com contas de teste preparadas; recebe a senha pela variável `ATRAIN_TEST_PASSWORD` e a URL por `ATRAIN_TEST_URL`. Para direcionar uma instância PHP de teste a outro banco, configure `SA_FUNDOS_DB_NAME` no ambiente do processo; sem ela, a aplicação usa `sa_ferrorama_fundos`.
