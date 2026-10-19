@@ -15,6 +15,5 @@ function validarSensor(array $dados): array
     foreach (['localizacao'=>'localização', 'segmento'=>'segmento'] as $campo=>$rotulo) {
         if ($dados[$campo] === '' || mb_strlen($dados[$campo]) > 80) { $erros[] = 'Informe ' . $rotulo . ' de até 80 caracteres.'; }
     }
-    if (!in_array($dados['ultima_leitura'], ['normal', 'atencao', 'critico'], true)) { $erros[] = 'Selecione um indicador de leitura válido.'; }
     return $erros;
 }

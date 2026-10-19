@@ -147,7 +147,7 @@ $posicao = strpos($listaSensor, $codigo);
 conferir($posicao !== false && preg_match('/sensores_form\.php\?id=(\d+)/', substr($listaSensor, $posicao), $encontrado) === 1, 'ID do sensor exibido');
 $idSensor = $encontrado[1];
 conferir($admin->post('/sensores_form.php', array_replace($sensor, ['id_sensor' => $idSensor, 'ultima_leitura' => 'critico']))['status'] === 303, 'editar sensor');
-conferir(str_contains($admin->get('/sensores.php?tipo=temperatura')['body'], 'estado-critico'), 'indicador editado');
+conferir(str_contains($admin->get('/sensores.php?tipo=temperatura')['body'], 'Sem leitura'), 'sensor novo sem leitura mantém-se visível');
 conferir(str_contains($admin->post('/trens.php', ['csrf' => $csrfTrem, 'excluir_id' => $idTrem])['body'], 'possui sensores'), 'exclusão de trem com sensor bloqueada');
 conferir(str_contains($admin->post('/sensores.php', ['csrf' => $csrfSensor, 'excluir_id' => $idSensor])['body'], 'Sensor excluído'), 'excluir sensor');
 conferir(str_contains($admin->post('/trens.php', ['csrf' => $csrfTrem, 'excluir_id' => $idTrem])['body'], 'Trem excluído'), 'excluir trem');

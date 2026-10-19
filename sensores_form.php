@@ -8,11 +8,11 @@ require __DIR__ . '/config/conexao.php';
 
 $id = filter_var($_GET['id'] ?? ($_POST['id_sensor'] ?? null), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: null;
 if ((isset($_GET['id']) && !$id) || (isset($_POST['id_sensor']) && $_POST['id_sensor'] !== '' && !$id)) { http_response_code(400); exit('Identificador de sensor inválido.'); }
-$dados = ['id_trem'=>'', 'codigo'=>'', 'tipo'=>'temperatura', 'localizacao'=>'', 'segmento'=>'', 'ultima_leitura'=>'normal'];
+$dados = ['id_trem'=>'', 'codigo'=>'', 'tipo'=>'temperatura', 'localizacao'=>'', 'segmento'=>''];
 $erros = [];
 $trens = $conexao->query('SELECT id_trem, prefixo, modelo FROM trens ORDER BY prefixo')->fetch_all(MYSQLI_ASSOC);
 if ($id && $_SERVER['REQUEST_METHOD'] !== 'POST') {
-    $consulta = $conexao->prepare('SELECT id_trem, codigo, tipo, localizacao, segmento, ultima_leitura FROM sensores WHERE id_sensor = ?');
+    $consulta = $conexao->prepare('SELECT id_trem, codigo, tipo, localizacao, segmento FROM sensores WHERE id_sensor = ?');
     $consulta->bind_param('i', $id); $consulta->execute();
     $registro = $consulta->get_result()->fetch_assoc(); $consulta->close();
     if (!$registro) { http_response_code(404); exit('Sensor não encontrado.'); }
@@ -38,13 +38,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $consulta->close();
     }
     if (!$erros) {
+        if ($id) {
+            $historico = $conexao->prepare('SELECT s.id_trem, s.tipo, s.codigo, EXISTS(SELECT 1 FROM leituras l WHERE l.id_sensor=s.id_sensor) AS tem_leituras FROM sensores s WHERE s.id_sensor=?');
+            $historico->bind_param('i', $id); $historico->execute();
+            $anterior = $historico->get_result()->fetch_assoc(); $historico->close();
+            if (!$anterior) { http_response_code(404); exit('Sensor não encontrado.'); }
+            if ($anterior['tem_leituras'] && ((int) $anterior['id_trem'] !== (int) $idTrem || $anterior['tipo'] !== $dados['tipo'] || $anterior['codigo'] !== $dados['codigo'])) {
+                $erros[] = 'Não é possível alterar código, tipo ou trem de um sensor que já possui leituras.';
+            }
+        }
+    }
+    if (!$erros) {
         try {
             if ($id) {
-                $consulta = $conexao->prepare('UPDATE sensores SET id_trem=?, codigo=?, tipo=?, localizacao=?, segmento=?, ultima_leitura=? WHERE id_sensor=?');
-                $consulta->bind_param('isssssi', $idTrem, $dados['codigo'], $dados['tipo'], $dados['localizacao'], $dados['segmento'], $dados['ultima_leitura'], $id);
+                $consulta = $conexao->prepare('UPDATE sensores SET id_trem=?, codigo=?, tipo=?, localizacao=?, segmento=? WHERE id_sensor=?');
+                $consulta->bind_param('issssi', $idTrem, $dados['codigo'], $dados['tipo'], $dados['localizacao'], $dados['segmento'], $id);
             } else {
-                $consulta = $conexao->prepare('INSERT INTO sensores (id_trem, codigo, tipo, localizacao, segmento, ultima_leitura) VALUES (?, ?, ?, ?, ?, ?)');
-                $consulta->bind_param('isssss', $idTrem, $dados['codigo'], $dados['tipo'], $dados['localizacao'], $dados['segmento'], $dados['ultima_leitura']);
+                $consulta = $conexao->prepare('INSERT INTO sensores (id_trem, codigo, tipo, localizacao, segmento) VALUES (?, ?, ?, ?, ?)');
+                $consulta->bind_param('issss', $idTrem, $dados['codigo'], $dados['tipo'], $dados['localizacao'], $dados['segmento']);
             }
             $consulta->execute(); $afetadas = $consulta->affected_rows; $consulta->close();
             if ($id && !$afetadas) {
@@ -67,5 +78,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <label for="codigo">Código</label><input id="codigo" name="codigo" maxlength="20" placeholder="S-TEMP-001" value="<?= escapar($dados['codigo']) ?>" required>
 <div class="grade-form"><div><label for="tipo">Tipo</label><select id="tipo" name="tipo" required><?php foreach (tiposSensor() as $valor=>$rotulo): ?><option value="<?= $valor ?>" <?= $dados['tipo'] === $valor ? 'selected' : '' ?>><?= $rotulo ?></option><?php endforeach; ?></select></div><div><label for="id_trem">Trem</label><select id="id_trem" name="id_trem" required><option value="">Selecione um trem</option><?php foreach ($trens as $trem): ?><option value="<?= (int) $trem['id_trem'] ?>" <?= $dados['id_trem'] === (string) $trem['id_trem'] ? 'selected' : '' ?>><?= escapar($trem['prefixo'] . ' — ' . $trem['modelo']) ?></option><?php endforeach; ?></select></div></div>
 <div class="grade-form"><div><label for="localizacao">Localização no trem</label><input id="localizacao" name="localizacao" maxlength="80" placeholder="Ex.: motor" value="<?= escapar($dados['localizacao']) ?>" required></div><div><label for="segmento">Segmento</label><input id="segmento" name="segmento" maxlength="80" placeholder="Ex.: trecho Norte" value="<?= escapar($dados['segmento']) ?>" required></div></div>
-<label for="ultima_leitura">Indicador manual da última leitura</label><select id="ultima_leitura" name="ultima_leitura" required><?php foreach (['normal'=>'Normal','atencao'=>'Atenção','critico'=>'Crítico'] as $valor=>$rotulo): ?><option value="<?= $valor ?>" <?= $dados['ultima_leitura'] === $valor ? 'selected' : '' ?>><?= $rotulo ?></option><?php endforeach; ?></select><p class="ajuda">Este indicador é preenchido manualmente neste bloco.</p>
+<p class="ajuda">O indicador é calculado automaticamente a partir da leitura mais recente.</p>
 <div class="acoes"><a href="sensores.php">Cancelar</a><button type="submit">Salvar sensor</button></div></form></main></body></html>

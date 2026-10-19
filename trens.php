@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $mensagem = $exclusao->affected_rows ? 'Trem excluído.' : 'Trem não encontrado.';
         $exclusao->close();
     } catch (mysqli_sql_exception $falha) {
-        $mensagem = $falha->getCode() === 1451 ? 'Este trem possui sensores ou maquinistas vinculados. Remova os vínculos antes de excluí-lo.' : 'Não foi possível excluir o trem.';
+        $mensagem = $falha->getCode() === 1451 ? 'Este trem possui sensores, rotas ou maquinistas vinculados. Remova os vínculos antes de excluí-lo.' : 'Não foi possível excluir o trem.';
     }
 }
 if (($_GET['mensagem'] ?? '') === 'salvo') { $mensagem = 'Trem salvo com sucesso.'; }
