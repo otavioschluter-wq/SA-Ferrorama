@@ -54,6 +54,13 @@ tr:last-child td { border-bottom: 0; }
 .estado-normal { color: #abf1c2; background: #164b35; }
 .estado-atencao { color: #ffe199; background: #654712; }
 .estado-critico { color: #ffd3d9; background: #752c3c; }
+.estado-programada { color: #b9e4ff; background: #224b68; }
+.estado-em_andamento { color: #ffe199; background: #654712; }
+.estado-concluida { color: #abf1c2; background: #164b35; }
+.estado-cancelada { color: #d5dce8; background: #425069; }
+.linha-alerta-critico { background: #44232f; border-left: 5px solid #f36c7d; }
+.opcao { display: flex; align-items: center; gap: 10px; margin-top: 18px; }
+.opcao input { width: auto; }
 .formulario { max-width: 760px; }
 .grade-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .grade-form label { display: block; margin-bottom: 6px; }

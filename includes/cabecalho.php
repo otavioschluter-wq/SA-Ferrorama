@@ -9,6 +9,10 @@ $raiz = str_contains($_SERVER['SCRIPT_NAME'] ?? '', '/usuarios/') ? '../' : '';
         <a href="<?= $raiz ?>principal.php">Início</a>
         <?php if (temPapel(['administrador', 'gestor'])): ?><a href="<?= $raiz ?>trens.php">Trens</a><?php endif; ?>
         <?php if (temPapel(['administrador', 'gestor', 'maquinista'])): ?><a href="<?= $raiz ?>sensores.php">Sensores</a><?php endif; ?>
+        <?php if (temPapel(['administrador', 'gestor', 'maquinista'])): ?><a href="<?= $raiz ?>rotas.php">Rotas</a><?php endif; ?>
+        <?php if (temPapel(['administrador', 'gestor', 'maquinista'])): ?><a href="<?= $raiz ?>leituras.php">Leituras</a><?php endif; ?>
+        <?php if (temPapel(['administrador', 'gestor', 'maquinista'])): ?><a href="<?= $raiz ?>notificacoes_alertas.php">Alertas</a><?php endif; ?>
+        <?php if (temPapel(['administrador', 'gestor'])): ?><a href="<?= $raiz ?>simulador.php">Simulador</a><?php endif; ?>
         <?php if (temPapel(['administrador'])): ?><a href="<?= $raiz ?>usuarios/cadastrar.php">Cadastrar usuário</a><?php endif; ?>
         <?php if (temPapel(['administrador'])): ?><a href="<?= $raiz ?>usuarios/atribuir_trem.php">Atribuir trem</a><?php endif; ?>
     </nav>
