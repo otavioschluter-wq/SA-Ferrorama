@@ -1,87 +1,109 @@
-# A-TRAIN — Bloco 3
+# A-TRAIN - Mapeamento de Ferrovias (SA Fundos)
 
-Aplicação PHP 8.2+ para login, sessão, trens, sensores, rotas, leituras e alertas. Usa Apache/XAMPP, mysqli com consultas preparadas e MySQL 8/MariaDB. As telas internas exigem sessão; o cadastro público continua criando apenas maquinistas.
+Sistema PHP puro com MySQL (mysqli, consultas preparadas) para trens, sensores, rotas, leituras, alertas, painel e relatorios. Projeto da Situacao de Aprendizagem de Desenvolvimento de Sistemas, SESI Joinville Moinho.
 
-## Acesso administrativo desta instalação local
+## Instalacao
 
-- Login: `admin_fundos`
-- Senha: `xuxLj_o6MfS1zikwSsEKPAsoSBL3hy-x`
+1. Extraia a pasta do projeto em `C:\xampp\htdocs\SA-Ferrorama-Fundos`.
+2. No painel do XAMPP, inicie Apache e MySQL.
+3. Abra `http://localhost/SA-Ferrorama-Fundos/`.
 
-Esta é a credencial do banco local `sa_ferrorama_fundos` preparado para a apresentação.
+Na primeira abertura o sistema cria sozinho o banco `sa_ferrorama_fundos` importando `banco/script.sql` (usuario `root` sem senha, padrao do XAMPP). Para recriar o banco do zero, apague-o no phpMyAdmin e recarregue a pagina, ou importe `banco/script.sql` manualmente (ele executa `DROP DATABASE IF EXISTS`).
 
-## Instalação nova
+## Usuarios de teste (senha de todos: `Ferro@2026`)
 
-1. Inicie Apache e MySQL/MariaDB. Use uma instância de banco acessível em `127.0.0.1:3306`.
-2. Com uma conta **administrativa do banco**, importe `banco/script.sql` pelo phpMyAdmin ou cliente MySQL. Ele cria o banco exclusivo `sa_ferrorama_fundos`, `trens`, `usuarios`, `sensores`, `rotas`, `leituras` e `alertas`, além dos registros de exemplo. A importação pode ser repetida: não substitui trens já cadastrados.
-3. Crie a conta de aplicação e conceda somente os privilégios de execução. Substitua `SENHA_LOCAL` por senha própria, fora do repositório:
+| Login | Perfil do guia | Papel gravado |
+|---|---|---|
+| `admin` | Administrador | `administrador` |
+| `gerente` | Gerente | `gestor` |
+| `maquinista` | Maquinista (trem TR-204) | `maquinista` |
+| `maquinista2` | Maquinista (trem TR-318) | `maquinista` |
+| `comum` | Usuario comum | `usuario` |
+| `desativado` | Usuario comum desativado (nao entra) | `usuario` |
 
-```sql
-CREATE USER 'sa_fundos_app'@'127.0.0.1' IDENTIFIED BY 'SENHA_LOCAL';
-GRANT SELECT, INSERT, UPDATE ON sa_ferrorama_fundos.usuarios TO 'sa_fundos_app'@'127.0.0.1';
-GRANT SELECT, INSERT, UPDATE, DELETE ON sa_ferrorama_fundos.trens TO 'sa_fundos_app'@'127.0.0.1';
-GRANT SELECT, INSERT, UPDATE, DELETE ON sa_ferrorama_fundos.sensores TO 'sa_fundos_app'@'127.0.0.1';
-GRANT SELECT, INSERT, UPDATE, DELETE ON sa_ferrorama_fundos.rotas TO 'sa_fundos_app'@'127.0.0.1';
-GRANT SELECT, INSERT ON sa_ferrorama_fundos.leituras TO 'sa_fundos_app'@'127.0.0.1';
-GRANT SELECT, INSERT ON sa_ferrorama_fundos.alertas TO 'sa_fundos_app'@'127.0.0.1';
-```
+## Telas
 
-Se a conta já existe, use `SHOW GRANTS FOR 'sa_fundos_app'@'127.0.0.1'` e conceda os privilégios faltantes. A conta de aplicação **não** precisa de `CREATE`, `ALTER` ou `DROP`; a instalação e a migração exigem uma conta administrativa do banco. Defina `SA_FUNDOS_DB_PASSWORD` no ambiente recebido pelo Apache e reinicie o Apache. `config/conexao.php` usa essa variável e, por padrão, o banco `sa_ferrorama_fundos`. `SA_FUNDOS_DB_NAME` e `SA_FUNDOS_DB_PORT` permitem apontar uma instância isolada para testes.
+| Arquivo | Funcao | Acesso |
+|---|---|---|
+| `index.php` | Login (recusa senha errada e usuario desativado) | publico |
+| `usuarios/registrar.php` | Cadastro publico (cria maquinista) | publico |
+| `recupera_senha.php` | Codigo de recuperacao exibido na tela e redefinicao | publico |
+| `dashboard.php` | Cinco indicadores, conforme o perfil | todos |
+| `trens.php`, `trens_form.php` | Listar, buscar, cadastrar, editar, excluir trens | admin, gerente |
+| `sensores.php`, `sensores_form.php` | CRUD de sensores com trem por chave estrangeira | admin, gerente (maquinista consulta o seu trem) |
+| `rotas.php`, `rotas_form.php` | CRUD de rotas com filtros de status, data, trem e rota | admin, gerente (maquinista consulta o seu trem) |
+| `leituras.php` | Consulta de leituras | admin, gerente, maquinista |
+| `simulador.php` | Gera leituras em lote e os alertas fora do limite | admin, gerente |
+| `notificacoes_alertas.php` | Central de alertas por severidade e tipo | admin, gerente, maquinista |
+| `gera_relatorio.php` | Formulario GET de tipo, periodo e filtros | admin, gerente |
+| `visualiza_relatorio.php` | Filtros aplicados, tabela, grafico, CSV e impressao | admin, gerente |
+| `usuarios.php` | Listar, editar e desativar usuarios | admin |
+| `usuarios/cadastrar.php`, `usuarios/atribuir_trem.php` | Cadastro administrativo e vinculo maquinista-trem | admin |
+| `sair.php` | Encerra e destroi a sessao (somente POST com CSRF) | logado |
 
-4. Para criar um administrador em outra instalação, gere um hash com PHP:
+## Decisoes
 
-```powershell
-C:\xampp\php\php.exe -r 'echo password_hash(readline("Senha inicial: "), PASSWORD_DEFAULT), PHP_EOL;'
-```
+- **Perfis:** o guia fala em gerente e usuario comum; o banco usa `gestor` e `usuario`. A verificacao de perfil e feita no servidor em cada pagina (`exigirPapel`) e nas consultas, nao apenas no menu.
+- **Instalacao sem passos manuais:** `config/conexao.php` conecta como `root` sem senha e importa o script se o banco nao existir. Em producao seria usada uma conta propria com privilegios minimos.
+- **Prefixo e codigo unicos:** `trens.prefixo` e `sensores.codigo` sao `UNIQUE` e validados por padrao (`TR-204`, `S-TEMP-001`).
+- **ON DELETE:** sensores, rotas e maquinistas usam `RESTRICT` para nao perder o vinculo com o trem; leituras e alertas usam `CASCADE` a partir do sensor e da leitura.
+- **Leitura:** valor `DECIMAL(10,2)` mais unidade; o tipo da medida vem do sensor. O indicador de cada sensor e calculado pela leitura mais recente.
+- **Limites e severidade:** ficam em `includes/limites.php`. Ate o limite e normal; ate 10% acima e atencao; acima disso e critico. Leitura e alerta sao gravados na mesma transacao.
+- **Alertas e notificacoes:** o alerta e o fato detectado e tambem o aviso exibido; nao ha tabela de entrega de notificacoes.
+- **Rotas:** data, partida e chegada em campos `DATE` e `TIME`; o status `atrasada` foi acrescentado porque o relatorio de eficiencia o exige.
+- **Vinculo do maquinista com o trem:** coluna `usuarios.trem_atribuido_id`. O painel, os alertas, os sensores e as rotas do maquinista sao filtrados por ela no servidor.
+- **Alerta ativo:** alerta das ultimas 24 horas. A velocidade media usa a mesma janela.
+- **Ausencia de dados:** cartoes sem leituras mostram "Sem dados", nunca zero. Velocidade media nula e tratada como ausencia.
+- **Grafico:** barras em CSS com largura proporcional ao maior valor, sem biblioteca, funciona offline e sempre reflete a coluna da tabela. Limitacao: sem eixos nem interacao.
+- **Recuperacao de senha:** o codigo e gerado na tela, guardado como hash na sessao e expira em 10 minutos, simulando o e-mail. O hash novo da senha usa `password_hash`. Limitacao: em producao o codigo iria por e-mail e seria guardado no banco.
+- **Usuarios:** nunca sao excluidos, so desativados (preserva o historico, inclusive `relatorios.id_usuario`). Travas: nao desativar a si mesmo; o ultimo administrador ativo nao pode ser desativado nem mudar de papel; edicao so por administrador.
+- **Relatorios:** formulario por GET (consulta, pode ser salvo e recarregado); exportacao CSV com BOM UTF-8 e separador `;` para abrir acentuado no Excel pt-BR; periodo inclusivo (`DATE(coluna) BETWEEN`). Cada relatorio visualizado e registrado em `relatorios`.
+- **Impressao:** `window.print()` com `@media print` escondendo menu e botoes.
 
-```sql
-INSERT INTO sa_ferrorama_fundos.usuarios (nome, login, senha, papel)
-VALUES ('Administrador', 'admin', 'HASH_GERADO', 'administrador');
-```
+## Limitacoes conhecidas
 
-Substitua `HASH_GERADO`. Não repita a inserção se o login já existe.
+- Nao ha reativacao de usuario pela interface (o guia pede so editar e desativar); use o phpMyAdmin.
+- Uma sessao ja aberta de um usuario desativado so termina ao sair; o bloqueio ocorre no login.
+- Sobreposicao de horarios de rotas e permitida.
+- Os limites dos sensores so mudam no codigo.
+- A conta `root` sem senha serve apenas para ambiente local de estudo.
 
-## Migração do Bloco 1 sem perda de contas
+## Registro de uso de IA
 
-Faça um backup do banco exclusivo desta SA. Com uma conta administrativa, execute **`banco/migracao_bloco2.sql`** nele caso contenha a tabela `usuario` original. O script renomeia `usuario` para `usuarios`, mantém `id`, `login`, `senha` (hash) e `papel`, preenche `nome` com o login nas contas antigas e adiciona a atribuição opcional de trem. Cria `trens` e `sensores` sem apagar registros. Pode ser repetido. Não execute `banco/script.sql` no lugar da migração sobre a instalação antiga.
+O Claude Code (Anthropic) foi usado para adaptar o Bloco 4 sobre o codigo existente, escrever `banco/script.sql`, `tests/teste_http.php` e este README.
 
-Depois da migração, confira os `GRANT`s acima. Privilégios antigos concedidos à tabela singular `usuario` não substituem os privilégios necessários em `usuarios`. Trens iniciais são criados apenas na instalação nova; no banco migrado, cadastre trens pela interface.
+## Testes
 
-## Papéis e atribuição de trem
+`C:\xampp\php\php.exe tests\teste_http.php` roda os cenarios abaixo contra o sistema em execucao (altera dados; use banco recem-importado). Resultado da ultima execucao: 32 de 32 verificacoes passaram. Nenhum cenario falhou na execucao final; uma asserção do teste de CSV foi corrigida durante a escrita (os cabecalhos saem entre aspas) e um defeito real foi corrigido antes: a conexao lia uma senha de ambiente e recusava o `root` padrao do XAMPP.
 
-| Papel gravado | Correspondência no guia | Trens | Sensores | Usuários |
+| Nº | O que se testa | Resultado esperado | Obtido | Situacao |
 |---|---|---|---|---|
-| `administrador` | Administrador | Gere | Gere | Cadastra e atribui trem |
-| `gestor` | Gerente | Gere | Gere | Sem acesso |
-| `maquinista` | Maquinista | Sem acesso | Consulta apenas os do trem atribuído | Sem acesso |
+| 1 | Pagina interna sem sessao | Redireciona ao login | Redirecionou | Passou |
+| 2 | Login com senha errada | Acesso negado | Negado | Passou |
+| 3 | Login com injecao SQL (`' OR '1'='1`) | Acesso negado | Negado | Passou |
+| 4 | Login de usuario desativado | Acesso negado | Negado | Passou |
+| 5 | Painel do administrador | Cinco indicadores com dados reais | 5 cartoes | Passou |
+| 6 | Painel do maquinista | Apenas alertas, sensores criticos e viagem do seu trem | Sem dados da frota | Passou |
+| 7 | Painel do usuario comum | Apenas viagens em andamento | Sem dados tecnicos | Passou |
+| 8 | Usuario comum abre `trens.php` | 403 | 403 | Passou |
+| 9 | Maquinista abre relatorios e usuarios | 403 | 403 | Passou |
+| 10 | Quatro tipos de relatorio | Filtros, tabela e grafico | Todos exibidos | Passou |
+| 11 | Relatorio com periodo invertido | 400 | 400 | Passou |
+| 12 | Exportar CSV | Download `text/csv` UTF-8 com BOM | Baixou, acentos corretos | Passou |
+| 13 | Relatorio em periodo sem dados | Mensagem de ausencia | "Sem dados" | Passou |
+| 14 | Painel sem leituras (banco com `leituras` vazia) | "Sem dados" no lugar de zero | "Sem dados" | Passou |
+| 15 | Simulador com 5 leituras fora do limite | 5 leituras e 5 alertas | 5 e 5 | Passou |
+| 16 | Filtro de rotas por status | Somente rotas atrasadas | Filtrou | Passou |
+| 17 | Central de alertas por severidade critica | Somente criticos, em destaque | Filtrou | Passou |
+| 18 | Excluir trem com sensores | Bloqueado com mensagem | Bloqueado | Passou |
+| 19 | Administrador desativa a si mesmo | Recusado | Recusado | Passou |
+| 20 | Ultimo administrador muda de papel | Recusado | Recusado | Passou |
+| 21 | Desativar sem token CSRF | 403 | 403 | Passou |
+| 22 | Desativar outro usuario e tentar entrar | Desativa; login recusado | Recusado | Passou |
+| 23 | Recuperacao com codigo errado | Recusada | Recusada | Passou |
+| 24 | Recuperacao com codigo correto e login com a senha nova | Senha trocada; login funciona | Funcionou | Passou |
+| 25 | Sair por GET | 405, sessao mantida | 405 | Passou |
+| 26 | Sair por POST | Sessao destruida | Redireciona ao login | Passou |
+| 27 | Instalacao limpa (banco inexistente, abrir o sistema) | Banco criado e login funcionando | Criado e funcionando | Passou |
 
-O projeto não cria conta de usuário comum nesta etapa. Se esse papel aparecer em dados externos, não passa pela proteção das páginas internas. O registro público fixa o papel `maquinista` no servidor e começa **sem trem atribuído**. Um administrador atribui ou remove o trem em **Atribuir trem** (`usuarios/atribuir_trem.php`), inclusive para contas criadas no registro público. O cadastro administrativo também permite atribuir o trem ao criar um maquinista. Sem atribuição, a consulta de sensores do maquinista fica vazia. A restrição é aplicada na consulta SQL a cada acesso, não apenas no menu ou na sessão.
-
-## Dados e regras
-
-- `trens.prefixo` é único no banco e validado no PHP no padrão `TR-204`. O status aceita `normal`, `atencao` e `critico`; esses valores possuem cores verde, amarela e vermelha. Ano entre 1900 e 2100, capacidade `DECIMAL(8,2)` positiva em toneladas e última inspeção opcional até a data atual.
-- `sensores.codigo` é único no padrão `S-TEMP-001` (prefixos `TEMP`, `VELO`, `ENER`, `LOCA`, coerentes com o tipo). O trem é obrigatório, selecionado do banco e verificado novamente no servidor. Localização e segmento são textos obrigatórios. O indicador mostrado em `sensores.php` é calculado pela leitura mais recente; `ultima_leitura` permanece na tabela por compatibilidade com o Bloco 2, mas não é mais editado nem consultado pela interface. Código, tipo e trem ficam fixos depois da primeira leitura, para preservar o histórico.
-- As FKs de sensores e de atribuição de maquinista usam `ON DELETE RESTRICT`. Um trem com sensor ou maquinista vinculado não pode ser excluído. Isso evita perder o vínculo e preserva a possibilidade de histórico futuro. Para excluir, remova antes os sensores e as atribuições.
-- Exclusões e saída usam `POST` com token CSRF; formulários de criação/edição também validam CSRF. Um `GET` em `sair.php` não encerra a sessão. A saída limpa dados, destrói a sessão no servidor e expira o cookie; páginas internas enviam `Cache-Control: no-store` para que o botão Voltar não exiba conteúdo antigo.
-- Toda entrada em consulta variável usa `prepare` e `bind_param`; dados exibidos são tratados com `htmlspecialchars`. Restrições de unicidade, FK e valores no banco complementam a validação PHP.
-
-## Arquivos e teste
-
-`index.php` faz login; `principal.php` é a entrada interna; `trens.php` e `sensores.php` listam e filtram; `trens_form.php` e `sensores_form.php` criam e editam; `sair.php` encerra a sessão. `includes/proteger.php`, `permissao.php`, `seguranca.php` e `cabecalho.php` centralizam acesso, CSRF e navegação. `logout.php` é apenas um redirecionamento legado e não encerra a sessão. `usuarios/cadastrar.php` permanece exclusivo do administrador; `usuarios/registrar.php` é público.
-
-## Bloco 3: instalação e migração
-
-Em uma instalação nova, `banco/script.sql` cria também `rotas`, `leituras` e `alertas`, com pelo menos três registros de exemplo em cada tabela. A importação é repetível. Para uma instalação que já concluiu o Bloco 2, faça backup do banco **exclusivo** `sa_ferrorama_fundos` e execute `banco/migracao_bloco3.sql` com uma conta administrativa do MySQL. A migração cria somente as novas tabelas e preserva os registros antigos; não execute o script de instalação nova como migração. Depois aplique os `GRANT`s acima. A conta de aplicação não possui privilégios de alteração de esquema.
-
-## Decisões do Bloco 3
-
-- **Rotas:** data, partida e chegada ficam em campos `DATE` e `TIME` separados. Isso torna o filtro inclusivo por dia simples e mantém a viagem no mesmo dia; uma viagem que cruza a meia-noite exigirá rever o modelo. A rota representa o trajeto e a viagem programada. O trem não pode ser removido enquanto houver rotas. Sobreposição de horários ainda é permitida: o bloqueio de conflitos é a extensão de nível Avançado do guia.
-- **Leituras:** cada leitura guarda um valor `DECIMAL(10,2)` e a unidade; o tipo vem do sensor. Assim novos tipos podem usar a mesma estrutura. Os índices por sensor e data ajudam a busca da leitura recente, e as telas limitam a 100 registros. Excluir um sensor apaga suas leituras e, em cascata, os alertas; um trem com sensor permanece protegido pela FK do Bloco 2.
-- **Limites:** ficam em `includes/limites.php`, concentrados em um único arquivo, simples de revisar para a apresentação. Alterá-los exige mudar o código; valores históricos e alertas já gravados não são recalculados. Temperatura usa °C (limite 90), velocidade km/h (120), energia kWh (500) e localização km percorridos no segmento (1000). A localização é uma medida numérica simulada, não coordenadas geográficas.
-- **Severidade:** valor até o limite é normal e não gera alerta; acima do limite até 10% é atenção; acima de 10% é crítico. O simulador pode gerar valores acima do limite de propósito. Leitura e alerta são inseridos na mesma transação: ambos persistem ou nenhum persiste.
-- **Alertas e notificações:** esta etapa concentra o fato detectado e o aviso na tabela `alertas`. A central `notificacoes_alertas.php` mostra o sensor e trem de origem por junções. Entrega individual de notificações e estado de leitura por destinatário ficam fora do Bloco 3.
-
-`rotas.php` aplica status, intervalo de data, trem e busca por origem/destino de forma combinável; `rotas_form.php` cria e edita. `leituras.php` filtra por sensor e trem; `simulador.php` gera de 1 a 100 leituras por operação, com consulta preparada fora do laço. `notificacoes_alertas.php` filtra por severidade e tipo. Administrador e gestor gerem rotas e executam o simulador; o maquinista consulta apenas dados do trem atribuído. Todas as mutações usam POST e CSRF.
-
-`tests/bloco3_http.php` cobre sessão, papéis, CSRF, CRUD e filtros de rotas, simulação, alertas, indicador e exclusão em cascata. Execute-o **somente em banco descartável**, com contas `admin_bloco3` e `maq_bloco3`, os trens de exemplo e as variáveis `SA_FUNDOS_TEST_URL` e `SA_FUNDOS_TEST_PASSWORD`. O teste altera e remove registros. `tests/bloco2_http.php` continua cobrindo os fluxos anteriores, agora com a expectativa de sensor sem leitura.
-
-Teste manualmente com administrador, gestor e maquinista: acesso anônimo e URL direta; login entre várias páginas; saída, Voltar e recarregamento; busca e filtro de trens; CRUD de trens e sensores; prefixo/código duplicados; trem inexistente; exclusão de trem vinculado; consulta restrita do maquinista. A lista é tabela no desktop e cartões no celular. `tests/bloco2_http.php` automatiza o fluxo HTTP usando a extensão `curl` do próprio PHP, contra **um banco isolado de teste** com contas `admin_bloco2`, `gestor_bloco2`, `maq_bloco2` e `sem_trem_bloco2` preparadas e sensores de exemplo nos trens 1 e 2. Execute `C:\xampp\php\php.exe tests\bloco2_http.php`, definindo `SA_FUNDOS_TEST_PASSWORD` e, se necessário, `SA_FUNDOS_TEST_URL`. Para direcionar uma instância PHP de teste a outro banco, configure `SA_FUNDOS_DB_NAME` no ambiente do processo; sem ela, a aplicação usa `sa_ferrorama_fundos`.
+O cenario 27 foi executado em MariaDB 10.4 do XAMPP (porta alternativa) com a pasta do repositorio, sem nenhum outro passo.
