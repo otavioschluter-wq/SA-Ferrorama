@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($login === '' || mb_strlen($login) > 80) {
         $erros[] = 'Informe um login de até 80 caracteres.';
     }
-    if (!in_array($papel, ['administrador', 'maquinista', 'gestor'], true)) {
+    if (!in_array($papel, ['administrador', 'maquinista', 'gestor', 'usuario'], true)) {
         $erros[] = 'Selecione um papel válido.';
     }
     if (strlen($senha) < 8 || strlen($senha) > 255) {
@@ -123,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label for="papel">Papel</label>
                     <select id="papel" name="papel" required>
                         <option value="">Selecione um papel</option>
-                        <?php foreach (['administrador', 'maquinista', 'gestor'] as $opcao): ?>
+                        <?php foreach (['administrador', 'maquinista', 'gestor', 'usuario'] as $opcao): ?>
                             <option value="<?= $opcao ?>" <?= $papel === $opcao ? 'selected' : '' ?>><?= ucfirst($opcao) ?></option>
                         <?php endforeach; ?>
                     </select>

@@ -19,12 +19,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($login !== '' && $senha !== '' && mb_strlen($login) <= 80) {
         require __DIR__ . '/config/conexao.php';
         try {
-            $consulta = $conexao->prepare('SELECT id, nome, login, senha, papel FROM usuarios WHERE login = ? LIMIT 1');
+            $consulta = $conexao->prepare('SELECT id, nome, login, senha, papel FROM usuarios WHERE login = ? AND ativo = 1 LIMIT 1');
             $consulta->bind_param('s', $login);
             $consulta->execute();
             $registro = $consulta->get_result()->fetch_assoc();
             $consulta->close();
-            if ($registro && password_verify($senha, $registro['senha']) && in_array($registro['papel'], ['administrador', 'maquinista', 'gestor'], true)) {
+            if ($registro && password_verify($senha, $registro['senha']) && in_array($registro['papel'], ['administrador', 'maquinista', 'gestor', 'usuario'], true)) {
                 session_regenerate_id(true);
                 $_SESSION['id'] = (int) $registro['id'];
                 $_SESSION['login'] = $registro['login'];
@@ -62,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <input id="senha" name="senha" type="password" required autocomplete="current-password">
             <button type="submit">Entrar</button>
         </form>
+        <p class="acesso-registro"><a href="recupera_senha.php">Esqueci a senha</a></p>
         <p class="acesso-registro">Ainda não tem conta? <a href="usuarios/registrar.php">Criar conta</a></p>
     </main>
 </body>
