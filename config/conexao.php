@@ -1,22 +1,20 @@
 <?php
-$servidor = '127.0.0.1';
-$usuario = 'sa_fundos_app';
-$senha_banco = getenv('SA_FUNDOS_DB_PASSWORD');
-$banco = getenv('SA_FUNDOS_DB_NAME') ?: 'sa_ferrorama_fundos';
-$porta = filter_var(getenv('SA_FUNDOS_DB_PORT') ?: '3306', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]);
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
 try {
-    if (!is_string($senha_banco) || $senha_banco === '') {
-        throw new RuntimeException('Credencial indisponível');
+    $conexao = new mysqli('127.0.0.1', 'root', '', null, (int) (getenv('SA_FUNDOS_DB_PORT') ?: 3306));
+    $conexao->set_charset('utf8mb4');
+    $existe = $conexao->query("SELECT 1 FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = 'sa_ferrorama_fundos'")->num_rows;
+    if (!$existe) {
+        $conexao->multi_query(file_get_contents(__DIR__ . '/../banco/script.sql'));
+        do {
+            if ($resultado = $conexao->store_result()) {
+                $resultado->free();
+            }
+        } while ($conexao->more_results() && $conexao->next_result());
     }
-    if (!is_string($banco) || !preg_match('/^[a-zA-Z0-9_]+$/', $banco) || !$porta) {
-        throw new RuntimeException('Nome de banco inválido');
-    }
-    $conexao = new mysqli($servidor, $usuario, $senha_banco, $banco, $porta);
-    if ($conexao->connect_error || !$conexao->set_charset('utf8mb4')) {
-        throw new RuntimeException('Conexão indisponível');
-    }
-} catch (mysqli_sql_exception | RuntimeException $erro) {
+    $conexao->select_db('sa_ferrorama_fundos');
+} catch (mysqli_sql_exception $erro) {
     http_response_code(503);
-    exit('Não foi possível conectar ao banco de dados. Verifique se o serviço está disponível.');
+    exit('Nao foi possivel conectar ao banco. Inicie o MySQL no painel do XAMPP e recarregue a pagina.');
 }

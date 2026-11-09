@@ -1,7 +1,7 @@
 <?php
 function statusRotas(): array
 {
-    return ['programada' => 'Programada', 'em_andamento' => 'Em andamento', 'concluida' => 'Concluída', 'cancelada' => 'Cancelada'];
+    return ['programada' => 'Programada', 'em_andamento' => 'Em andamento', 'concluida' => 'Concluída', 'cancelada' => 'Cancelada', 'atrasada' => 'Atrasada'];
 }
 
 function dataValida(string $data): bool
