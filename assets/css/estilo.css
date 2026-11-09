@@ -127,3 +127,24 @@ tr:last-child td { border-bottom: 0; }
     .cadastro-acoes button { width: 100%; }
     .cadastro-cancelar { text-align: center; }
 }
+
+.estado-atrasada { color: #ffd3d9; background: #752c3c; }
+.indicadores { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+.indicador h2 { margin: 0 0 4px; font-size: 1.05rem; }
+.indicador ul { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.numero { margin: 8px 0 0; font-size: 2.4rem; font-weight: 800; }
+.sem-dados { margin: 8px 0 0; color: #b6c9de; font-style: italic; }
+.filtros-aplicados, .grafico { margin-bottom: 20px; }
+.filtros-aplicados p { margin: 6px 0 0; }
+.grafico { margin-top: 20px; display: grid; gap: 10px; }
+.barra-linha { display: grid; grid-template-columns: 80px 1fr 80px; align-items: center; gap: 12px; }
+.barra-fundo { background: #0b192d; border-radius: 6px; height: 22px; }
+.barra { background: #3d98d6; height: 100%; border-radius: 6px; }
+
+@media print {
+    body { background: #fff; color: #000; }
+    .topo, .sem-impressao { display: none; }
+    .cartao, table, th, td { background: #fff; color: #000; border-color: #999; box-shadow: none; }
+    .barra-fundo { background: #eee; border: 1px solid #999; }
+    .barra { background: #333; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
